@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+.env
+.venv/
+*.log
+
+# Node
+node_modules/
+.next/
+.env.local
+.env.production
+.env.development
+
+# Docker
+*.pid
+*.db
+docker-compose.override.yml
+
+# General
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Test/coverage
+.coverage
+coverage.xml
+htmlcov/
+jest-coverage/
