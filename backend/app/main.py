@@ -22,5 +22,5 @@ def health():
 @app.get("/api/message")
 def message():
     return {
-        "message": "Hello from backend"
+        "message": "Hello from backend!!"
     }
