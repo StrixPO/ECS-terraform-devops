@@ -11,4 +11,4 @@ def test_health():
 def test_message():
     res = client.get("/api/message")
     assert res.status_code == 200
-    assert "message" in res.json 
+    assert "message" in res.json()
