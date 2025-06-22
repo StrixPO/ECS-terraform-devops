@@ -47,7 +47,7 @@ jobs:
           cd frontend
           npm run build
 
-      # Optional: Run frontend tests if you use Jest or Cypress
+      # Optional: Run frontend tests ( Jest or Cypress )
       # - name: Run frontend tests
       #   run: |
       #     cd frontend
