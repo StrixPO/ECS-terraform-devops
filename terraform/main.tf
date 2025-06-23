@@ -241,20 +241,3 @@ resource "aws_secretsmanager_secret_version" "app_secret_version" {
   })
 }
 
-# cloudWatch Monitoring 
-resource "aws_cloudwatch_metric_alarm" "high_cpu_backend" {
-  alarm_name          = "${var.project_name}-backend-cpu-high"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/ECS"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 70
-  alarm_description   = "Alarm if backend CPU > 70%"
-  dimensions = {
-    ClusterName = aws_ecs_cluster.main.name
-    ServiceName = aws_ecs_service.backend.name
-  }
-  alarm_actions = [] # Add SNS or email ARN if needed
-}
