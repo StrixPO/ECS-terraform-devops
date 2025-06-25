@@ -12,6 +12,14 @@ resource "aws_subnet" "public_a" {
   tags = { Name = "${var.project_name}-subnet-a" }
 }
 
+resource "aws_subnet" "public_b" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-1b"
+  map_public_ip_on_launch = true
+  tags = { Name = "${var.project_name}-subnet-b" }
+}
+
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
   tags = { Name = "${var.project_name}-igw" }
@@ -27,6 +35,11 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -81,12 +94,13 @@ resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-ecs-cluster"
 }
 
+
 resource "aws_lb" "main" {
   name               = "${var.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_a.id]
+  subnets            = [aws_subnet.public_a.id,aws_subnet.public_b.id]
 }
 
 resource "aws_lb_target_group" "frontend" {
@@ -130,6 +144,22 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+resource "aws_lb_listener_rule" "backend_rule" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 10
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
+  }
+}
+
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "${var.project_name}-task-exec-role"
   assume_role_policy = jsonencode({
@@ -164,6 +194,12 @@ resource "aws_ecs_task_definition" "backend" {
       containerPort = 8000
       protocol      = "tcp"
     }]
+    secrets = [
+      {
+        name      = "MY_API_KEY"
+        valueFrom = aws_secretsmanager_secret.app_secrets.arn
+      }
+    ]
     environment = [
       { name = "ENV", value = "production" }
     ]
@@ -197,7 +233,7 @@ resource "aws_ecs_service" "backend" {
   desired_count   = 2
   launch_type     = "FARGATE"
   network_configuration {
-    subnets         = [aws_subnet.public_a.id]
+    subnets = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     security_groups = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
@@ -206,7 +242,10 @@ resource "aws_ecs_service" "backend" {
     container_name   = "backend"
     container_port   = 8000
   }
-  depends_on = [aws_lb_listener.http]
+  depends_on = [
+  aws_lb_listener.http,
+  aws_lb_listener_rule.backend_rule
+]
 }
 
 resource "aws_ecs_service" "frontend" {
@@ -216,7 +255,7 @@ resource "aws_ecs_service" "frontend" {
   desired_count   = 2
   launch_type     = "FARGATE"
   network_configuration {
-    subnets         = [aws_subnet.public_a.id]
+    subnets = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     security_groups = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
@@ -229,15 +268,16 @@ resource "aws_ecs_service" "frontend" {
 }
 
 # Secrets Manager
-resource "aws_secretsmanager_secret" "app_secret" {
-  name = "${var.project_name}-app-secret"
+resource "aws_secretsmanager_secret" "app_secrets" {
+  name = "${var.project_name}-secrets"
 }
 
-resource "aws_secretsmanager_secret_version" "app_secret_version" {
-  secret_id     = aws_secretsmanager_secret.app_secret.id
+resource "aws_secretsmanager_secret_version" "app_secrets_version" {
+  secret_id     = aws_secretsmanager_secret.app_secrets.id
   secret_string = jsonencode({
-    db_password = "examplepassword",
-    api_key     = "dummyapikey"
+    DUMMY_API_KEY = "abc123",
+    ENV           = "prod"
   })
 }
+
 

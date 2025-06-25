@@ -31,3 +31,32 @@ docker-compose.override.yml
 coverage.xml
 htmlcov/
 jest-coverage/
+
+# Terraform state
+*.tfstate
+*.tfstate.backup
+
+# Crash logs
+crash.log
+
+# Terraform plan output
+*.tfplan
+
+# Sensitive files
+terraform.tfvars
+*.auto.tfvars
+
+# Terraform working dir
+.terraform/
+.terraform.lock.hcl
+
+# IDE or editor-specific (optional)
+.vscode/
+.idea/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Misc
+LICENSE.txt
